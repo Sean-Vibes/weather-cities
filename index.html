@@ -71,7 +71,7 @@
 <body>
 
 <div class="container">
-  <h1>Weather & City Images</h1>
+  
   <h2 id="city-name">Loading...</h2>
   <p class="current-weather" id="current-weather">Loading current weather...</p>
   
@@ -141,7 +141,7 @@ async function fetchWeather(city) {
 }
 
 function displayWeather(current, forecast, cityKey) {
-  cityNameEl.textContent = `${current.name}, ${current.sys.country}`;
+  cityNameEl.textContent = `${current.name}, ${current.state || ""} ${current.sys.country}`.replace(/,\s+/g, ", ").trim();
   currentWeatherEl.innerHTML = `<strong>Now:</strong> ${current.weather[0].description}, ${Math.round(current.main.temp)}°F`;
 
   let dailyForecasts = [];
@@ -165,7 +165,11 @@ function displayWeather(current, forecast, cityKey) {
     `;
   }).join('');
 
-  cityImageEl.innerHTML = `<img src="${cityImages[cityKey]}" alt="${current.name} skyline">`;
+  
+    const imageKey = `${current.name},${current.sys.country}`;
+    const imageUrl = cityImages[imageKey] || cityImages[cityKey];
+    cityImageEl.innerHTML = `<img src="${imageUrl}" alt="${current.name} skyline">`;
+    
 }
 
 function cycleCities() {
