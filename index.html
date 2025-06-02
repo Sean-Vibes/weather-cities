@@ -1,0 +1,181 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Weather & City Images - Auto Cycle</title>
+<style>
+  body, html {
+    margin: 0; padding: 0; height: 100%;
+    font-family: Arial, sans-serif;
+    background: #f0f4f8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .container {
+    text-align: center;
+    max-width: 600px;
+    background: white;
+    padding: 30px 20px;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+  }
+  h1 {
+    margin-bottom: 5px;
+  }
+  h2 {
+    margin-top: 15px;
+  }
+  .current-weather {
+    font-size: 1.3em;
+    margin: 10px 0 20px;
+  }
+  .forecast {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+  .forecast-day {
+    background: #e3eef9;
+    border-radius: 8px;
+    padding: 10px 8px;
+    flex: 1;
+    margin: 0 5px;
+    box-shadow: inset 0 0 8px #b0c7e9;
+  }
+  .forecast-day strong {
+    display: block;
+    margin-bottom: 6px;
+  }
+  .city-image img {
+    margin-top: 20px;
+    width: 100%;
+    max-height: 280px;
+    object-fit: cover;
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+  }
+  footer {
+    margin-top: 30px;
+    font-size: 12px;
+    color: #666;
+  }
+  footer a {
+    color: #007acc;
+    text-decoration: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Weather & City Images</h1>
+  <h2 id="city-name">Loading...</h2>
+  <p class="current-weather" id="current-weather">Loading current weather...</p>
+  
+  <div class="forecast" id="forecast"></div>
+  
+  <div class="city-image" id="city-image"></div>
+
+  <footer>
+    Data from <a href="https://openweathermap.org/" target="_blank">OpenWeatherMap</a> & images from <a href="https://unsplash.com" target="_blank">Unsplash</a>
+  </footer>
+</div>
+
+<script>
+const apiKey = '1cf8937cc9682ba717da9c52c975283e'; // Your API key
+
+const cities = [
+  "Syracuse,US",
+  "Fargo,US",
+  "Tampa,US",
+  "London,GB",
+  "Sydney,AU",
+  "Moscow,RU"
+];
+
+const cityImages = {
+  "Syracuse,US": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80",
+  "Fargo,US": "https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=600&q=80",
+  "Tampa,US": "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?auto=format&fit=crop&w=600&q=80",
+  "London,GB": "https://images.unsplash.com/photo-1508051123996-69f8caf4891e?auto=format&fit=crop&w=600&q=80",
+  "Sydney,AU": "https://images.unsplash.com/photo-1504609813449-4d8b22cc01bf?auto=format&fit=crop&w=600&q=80",
+  "Moscow,RU": "https://images.unsplash.com/photo-1549924231-2a8c0b97d6e7?auto=format&fit=crop&w=600&q=80"
+};
+
+const cityNameEl = document.getElementById('city-name');
+const currentWeatherEl = document.getElementById('current-weather');
+const forecastEl = document.getElementById('forecast');
+const cityImageEl = document.getElementById('city-image');
+
+let currentIndex = 0;
+
+async function fetchWeather(city) {
+  currentWeatherEl.textContent = 'Loading current weather...';
+  forecastEl.innerHTML = '';
+  cityNameEl.textContent = 'Loading...';
+  cityImageEl.innerHTML = '';
+
+  const currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=imperial&appid=${apiKey}`;
+  const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=imperial&appid=${apiKey}`;
+
+  try {
+    const [currentRes, forecastRes] = await Promise.all([
+      fetch(currentUrl),
+      fetch(forecastUrl)
+    ]);
+    if (!currentRes.ok || !forecastRes.ok) {
+      throw new Error('Failed to fetch weather data');
+    }
+    const currentData = await currentRes.json();
+    const forecastData = await forecastRes.json();
+    displayWeather(currentData, forecastData, city);
+  } catch (error) {
+    cityNameEl.textContent = city;
+    currentWeatherEl.textContent = "Error loading weather data.";
+    forecastEl.innerHTML = "";
+    cityImageEl.innerHTML = "";
+  }
+}
+
+function displayWeather(current, forecast, cityKey) {
+  cityNameEl.textContent = `${current.name}, ${current.sys.country}`;
+  currentWeatherEl.innerHTML = `<strong>Now:</strong> ${current.weather[0].description}, ${Math.round(current.main.temp)}°F`;
+
+  let dailyForecasts = [];
+  const today = new Date().getDate();
+  forecast.list.forEach(item => {
+    const date = new Date(item.dt_txt);
+    if (date.getHours() === 12 && date.getDate() !== today && dailyForecasts.length < 3) {
+      dailyForecasts.push(item);
+    }
+  });
+
+  forecastEl.innerHTML = dailyForecasts.map(day => {
+    const date = new Date(day.dt_txt);
+    const dayName = date.toLocaleDateString(undefined, { weekday: 'short' });
+    return `
+      <div class="forecast-day">
+        <strong>${dayName}</strong>
+        <div>${day.weather[0].main}</div>
+        <div>${Math.round(day.main.temp_min)}°F - ${Math.round(day.main.temp_max)}°F</div>
+      </div>
+    `;
+  }).join('');
+
+  cityImageEl.innerHTML = `<img src="${cityImages[cityKey]}" alt="${current.name} skyline">`;
+}
+
+function cycleCities() {
+  fetchWeather(cities[currentIndex]);
+  currentIndex = (currentIndex + 1) % cities.length;
+}
+
+cycleCities();
+setInterval(cycleCities, 15000);
+</script>
+
+</body>
+</html>
