@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Weather & City Images - Auto Cycle</title>
+<title>Weather & City</title>
 <style>
   body, html {
     margin: 0; padding: 0; height: 100%;
@@ -21,9 +21,6 @@
     padding: 30px 20px;
     border-radius: 12px;
     box-shadow: 0 6px 18px rgba(0,0,0,0.1);
-  }
-  h1 {
-    margin-bottom: 5px;
   }
   h2 {
     margin-top: 15px;
@@ -71,7 +68,6 @@
 <body>
 
 <div class="container">
-  
   <h2 id="city-name">Loading...</h2>
   <p class="current-weather" id="current-weather">Loading current weather...</p>
   
@@ -97,12 +93,30 @@ const cities = [
 ];
 
 const cityImages = {
-  "Syracuse,US": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80",
-  "Fargo,US": "https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=600&q=80",
-  "Tampa,US": "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?auto=format&fit=crop&w=600&q=80",
-  "London,GB": "https://images.unsplash.com/photo-1508051123996-69f8caf4891e?auto=format&fit=crop&w=600&q=80",
-  "Sydney,AU": "https://images.unsplash.com/photo-1504609813449-4d8b22cc01bf?auto=format&fit=crop&w=600&q=80",
-  "Moscow,RU": "https://images.unsplash.com/photo-1549924231-2a8c0b97d6e7?auto=format&fit=crop&w=600&q=80"
+  "Syracuse,US": [
+    "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1585408671626-9f6e6e7267bb?auto=format&fit=crop&w=600&q=80"
+  ],
+  "Fargo,US": [
+    "https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1580407186565-14034d3f361e?auto=format&fit=crop&w=600&q=80"
+  ],
+  "Tampa,US": [
+    "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1608776825792-8c10fda05df7?auto=format&fit=crop&w=600&q=80"
+  ],
+  "London,GB": [
+    "https://images.unsplash.com/photo-1508051123996-69f8caf4891e?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1543862471-12573c94d4a2?auto=format&fit=crop&w=600&q=80"
+  ],
+  "Sydney,AU": [
+    "https://images.unsplash.com/photo-1504609813449-4d8b22cc01bf?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d3?auto=format&fit=crop&w=600&q=80"
+  ],
+  "Moscow,RU": [
+    "https://images.unsplash.com/photo-1549924231-2a8c0b97d6e7?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1600611117482-03c8f8d72f3e?auto=format&fit=crop&w=600&q=80"
+  ]
 };
 
 const cityNameEl = document.getElementById('city-name');
@@ -165,11 +179,10 @@ function displayWeather(current, forecast, cityKey) {
     `;
   }).join('');
 
-  
-    const imageKey = `${current.name},${current.sys.country}`;
-    const imageUrl = cityImages[imageKey] || cityImages[cityKey];
-    cityImageEl.innerHTML = `<img src="${imageUrl}" alt="${current.name} skyline">`;
-    
+  const imageKey = `${current.name},${current.sys.country}`;
+  const images = cityImages[imageKey] || cityImages[cityKey] || [];
+  const imageUrl = images.length ? images[Math.floor(Math.random() * images.length)] : "";
+  cityImageEl.innerHTML = `<img src="${imageUrl}" alt="${current.name} skyline">`;
 }
 
 function cycleCities() {
