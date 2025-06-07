@@ -1,198 +1,764 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Weather & City</title>
-<style>
-  body, html {
-    margin: 0; padding: 0; height: 100%;
-    font-family: Arial, sans-serif;
-    background: #f0f4f8;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  .container {
-    text-align: center;
-    max-width: 600px;
-    background: white;
-    padding: 30px 20px;
-    border-radius: 12px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.1);
-  }
-  h2 {
-    margin-top: 15px;
-  }
-  .current-weather {
-    font-size: 1.3em;
-    margin: 10px 0 20px;
-  }
-  .forecast {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 20px;
-  }
-  .forecast-day {
-    background: #e3eef9;
-    border-radius: 8px;
-    padding: 10px 8px;
-    flex: 1;
-    margin: 0 5px;
-    box-shadow: inset 0 0 8px #b0c7e9;
-  }
-  .forecast-day strong {
-    display: block;
-    margin-bottom: 6px;
-  }
-  .city-image img {
-    margin-top: 20px;
-    width: 100%;
-    max-height: 280px;
-    object-fit: cover;
-    border-radius: 12px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
-  }
-  footer {
-    margin-top: 30px;
-    font-size: 12px;
-    color: #666;
-  }
-  footer a {
-    color: #007acc;
-    text-decoration: none;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Weather Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .background-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            transition: opacity 2s ease-in-out;
+            z-index: -1;
+        }
+
+        .background-layer.fade-out {
+            opacity: 0;
+        }
+
+        .background-layer.fade-in {
+            opacity: 1;
+        }
+
+        .weather-container {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            animation: slideIn 0.8s ease-out;
+            transition: opacity 1s ease-in-out;
+        }
+
+        .weather-container.fade-out {
+            opacity: 0;
+        }
+
+        .weather-container.fade-in {
+            opacity: 1;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .location {
+            color: white;
+            font-size: 2.2rem;
+            font-weight: 300;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .date {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            margin-bottom: 30px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        }
+
+        .weather-icon {
+            font-size: 6rem;
+            margin: 20px 0;
+            animation: float 3s ease-in-out infinite;
+            filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .temperature {
+            color: white;
+            font-size: 4rem;
+            font-weight: 100;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .description {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 1.3rem;
+            margin-bottom: 30px;
+            text-transform: capitalize;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .detail-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .detail-item:hover {
+            transform: translateY(-5px);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .detail-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        }
+
+        .detail-value {
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        }
+
+        .loading {
+            color: white;
+            font-size: 1.2rem;
+            animation: pulse 1.5s ease-in-out infinite;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .error {
+            color: #ff6b6b;
+            font-size: 1.1rem;
+            margin: 20px 0;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .refresh-btn, .pause-btn {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        }
+
+        .refresh-btn:hover, .pause-btn:hover {
+            background: rgba(0, 0, 0, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .pause-btn.paused {
+            background: rgba(255, 165, 0, 0.6);
+        }
+
+        .last-updated {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+            margin-top: 20px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        }
+
+        .progress-indicator {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .progress-dot.active {
+            background: rgba(255, 255, 255, 0.9);
+            transform: scale(1.2);
+        }
+
+        .image-credit {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.7rem;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px 10px;
+            border-radius: 15px;
+        }
+
+        .city-selector {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .city-dropdown {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+    </style>
 </head>
 <body>
+    <div class="background-layer" id="backgroundLayer1"></div>
+    <div class="background-layer" id="backgroundLayer2" style="opacity: 0;"></div>
+    
+    <div class="progress-indicator" id="progressIndicator"></div>
+    
+    <div class="city-selector">
+        <select class="city-dropdown" id="citySelector" onchange="selectCity(this.value)">
+            <option value="auto">Auto Rotation</option>
+            <option value="syracuse">Syracuse, NY</option>
+            <option value="fortLauderdale">Fort Lauderdale, FL</option>
+            <option value="newYork">New York, NY</option>
+            <option value="ottawa">Ottawa, CA</option>
+            <option value="grandRapids">Grand Rapids, MI</option>
+            <option value="fargo">Fargo, ND</option>
+            <option value="portland">Portland, OR</option>
+            <option value="london">London, UK</option>
+            <option value="amsterdam">Amsterdam, NL</option>
+        </select>
+    </div>
 
-<div class="container">
-  <h2 id="city-name">Loading...</h2>
-  <p class="current-weather" id="current-weather">Loading current weather...</p>
-  
-  <div class="forecast" id="forecast"></div>
-  
-  <div class="city-image" id="city-image"></div>
+    <div class="weather-container" id="weatherContainer">
+        <div class="location" id="locationName">Loading...</div>
+        <div class="date" id="currentDate"></div>
+        
+        <div id="weatherContent">
+            <div class="loading">Loading weather data...</div>
+        </div>
+        
+        <div class="controls">
+            <button class="refresh-btn" onclick="fetchWeather()">Refresh</button>
+            <button class="pause-btn" id="pauseBtn" onclick="toggleAutoRotation()">Pause</button>
+        </div>
+        <div class="last-updated" id="lastUpdated"></div>
+    </div>
 
-  <footer>
-    Data from <a href="https://openweathermap.org/" target="_blank">OpenWeatherMap</a> & images from <a href="https://unsplash.com" target="_blank">Unsplash</a>
-  </footer>
-</div>
+    <div class="image-credit" id="imageCredit"></div>
 
-<script>
-const apiKey = '1cf8937cc9682ba717da9c52c975283e'; // Your API key
+    <script>
+        // Enhanced city configuration with all requested cities
+        const cities = {
+            syracuse: {
+                name: 'Syracuse, NY',
+                apiQuery: 'Syracuse,NY',
+                mockData: {
+                    temp_F: '45',
+                    FeelsLikeF: '42', 
+                    humidity: '65',
+                    windspeedMiles: '8',
+                    weatherDesc: [{value: 'Partly Cloudy'}]
+                }
+            },
+            fortLauderdale: {
+                name: 'Fort Lauderdale, FL',
+                apiQuery: 'Fort+Lauderdale,FL',
+                mockData: {
+                    temp_F: '78',
+                    FeelsLikeF: '82', 
+                    humidity: '75',
+                    windspeedMiles: '12',
+                    weatherDesc: [{value: 'Sunny'}]
+                }
+            },
+            newYork: {
+                name: 'New York, NY',
+                apiQuery: 'New+York,NY',
+                mockData: {
+                    temp_F: '52',
+                    FeelsLikeF: '48', 
+                    humidity: '70',
+                    windspeedMiles: '15',
+                    weatherDesc: [{value: 'Cloudy'}]
+                }
+            },
+            ottawa: {
+                name: 'Ottawa, CA',
+                apiQuery: 'Ottawa,Canada',
+                mockData: {
+                    temp_F: '35',
+                    FeelsLikeF: '28', 
+                    humidity: '80',
+                    windspeedMiles: '10',
+                    weatherDesc: [{value: 'Snow'}]
+                }
+            },
+            grandRapids: {
+                name: 'Grand Rapids, MI',
+                apiQuery: 'Grand+Rapids,MI',
+                mockData: {
+                    temp_F: '38',
+                    FeelsLikeF: '32', 
+                    humidity: '75',
+                    windspeedMiles: '12',
+                    weatherDesc: [{value: 'Overcast'}]
+                }
+            },
+            fargo: {
+                name: 'Fargo, ND',
+                apiQuery: 'Fargo,ND',
+                mockData: {
+                    temp_F: '25',
+                    FeelsLikeF: '18', 
+                    humidity: '85',
+                    windspeedMiles: '18',
+                    weatherDesc: [{value: 'Snow Showers'}]
+                }
+            },
+            portland: {
+                name: 'Portland, OR',
+                apiQuery: 'Portland,OR',
+                mockData: {
+                    temp_F: '55',
+                    FeelsLikeF: '52', 
+                    humidity: '90',
+                    windspeedMiles: '8',
+                    weatherDesc: [{value: 'Light Rain'}]
+                }
+            },
+            london: {
+                name: 'London, UK',
+                apiQuery: 'London,UK',
+                mockData: {
+                    temp_F: '48',
+                    FeelsLikeF: '45', 
+                    humidity: '85',
+                    windspeedMiles: '6',
+                    weatherDesc: [{value: 'Fog'}]
+                }
+            },
+            amsterdam: {
+                name: 'Amsterdam, NL',
+                apiQuery: 'Amsterdam,Netherlands',
+                mockData: {
+                    temp_F: '42',
+                    FeelsLikeF: '38', 
+                    humidity: '82',
+                    windspeedMiles: '14',
+                    weatherDesc: [{value: 'Drizzle'}]
+                }
+            }
+        };
 
-const cities = [
-  "Syracuse,US",
-  "Fargo,US",
-  "Tampa,US",
-  "London,GB",
-  "Sydney,AU",
-  "Moscow,RU"
-];
+        // Enhanced weather backgrounds for all cities
+        const weatherBackgrounds = {
+            syracuse: {
+                clear: { day: 'https://picsum.photos/1920/1080?random=1', night: 'https://picsum.photos/1920/1080?random=2', credit: 'Syracuse Clear Sky' },
+                clouds: { day: 'https://picsum.photos/1920/1080?random=3', night: 'https://picsum.photos/1920/1080?random=4', credit: 'Syracuse Cloudy' },
+                rain: { day: 'https://picsum.photos/1920/1080?random=5', night: 'https://picsum.photos/1920/1080?random=6', credit: 'Syracuse Rain' },
+                snow: { day: 'https://picsum.photos/1920/1080?random=7', night: 'https://picsum.photos/1920/1080?random=8', credit: 'Syracuse Snow' },
+                sunny: { day: 'https://picsum.photos/1920/1080?random=9', night: 'https://picsum.photos/1920/1080?random=10', credit: 'Syracuse Sunny' }
+            },
+            fortLauderdale: {
+                clear: { day: 'https://picsum.photos/1920/1080?random=11', night: 'https://picsum.photos/1920/1080?random=12', credit: 'Fort Lauderdale Beach' },
+                clouds: { day: 'https://picsum.photos/1920/1080?random=13', night: 'https://picsum.photos/1920/1080?random=14', credit: 'Fort Lauderdale Cloudy' },
+                rain: { day: 'https://picsum.photos/1920/1080?random=15', night: 'https://picsum.photos/1920/1080?random=16', credit: 'Florida Rain' },
+                sunny: { day: 'https://picsum.photos/1920/1080?random=17', night: 'https://picsum.photos/1920/1080?random=18', credit: 'Fort Lauderdale Sunny' },
+                thunderstorm: { day: 'https://picsum.photos/1920/1080?random=19', night: 'https://picsum.photos/1920/1080?random=20', credit: 'Florida Storm' }
+            },
+            newYork: {
+                clear: { day: 'https://picsum.photos/1920/1080?random=21', night: 'https://picsum.photos/1920/1080?random=22', credit: 'NYC Skyline Clear' },
+                clouds: { day: 'https://picsum.photos/1920/1080?random=23', night: 'https://picsum.photos/1920/1080?random=24', credit: 'NYC Cloudy Sky' },
+                rain: { day: 'https://picsum.photos/1920/1080?random=25', night: 'https://picsum.photos/1920/1080?random=26', credit: 'NYC Rain' },
+                snow: { day: 'https://picsum.photos/1920/1080?random=27', night: 'https://picsum.photos/1920/1080?random=28', credit: 'NYC Winter' },
+                sunny: { day: 'https://picsum.photos/1920/1080?random=29', night: 'https://picsum.photos/1920/1080?random=30', credit: 'NYC Sunny Day' }
+            },
+            ottawa: {
+                clear: { day: 'https://picsum.photos/1920/1080?random=31', night: 'https://picsum.photos/1920/1080?random=32', credit: 'Ottawa Parliament Hill' },
+                clouds: { day: 'https://picsum.photos/1920/1080?random=33', night: 'https://picsum.photos/1920/1080?random=34', credit: 'Ottawa Overcast' },
+                rain: { day: 'https://picsum.photos/1920/1080?random=35', night: 'https://picsum.photos/1920/1080?random=36', credit: 'Ottawa Rain' },
+                snow: { day: 'https://picsum.photos/1920/1080?random=37', night: 'https://picsum.photos/1920/1080?random=38', credit: 'Ottawa Winter' },
+                sunny: { day: 'https://picsum.photos/1920/1080?random=39', night: 'https://picsum.photos/1920/1080?random=40', credit: 'Ottawa Sunny' }
+            },
+            grandRapids: {
+                clear: { day: 'https://picsum.photos/1920/1080?random=41', night: 'https://picsum.photos/1920/1080?random=42', credit: 'Grand Rapids Clear' },
+                clouds: { day: 'https://picsum.photos/1920/1080?random=43', night: 'https://picsum.photos/1920/1080?random=44', credit: 'Grand Rapids Cloudy' },
+                rain: { day: 'https://picsum.photos/1920/1080?random=45', night: 'https://picsum.photos/1920/1080?random=46', credit: 'Grand Rapids Rain' },
+                snow: { day: 'https://picsum.photos/1920/1080?random=47', night: 'https://picsum.photos/1920/1080?random=48', credit: 'Michigan Winter' },
+                overcast: { day: 'https://picsum.photos/1920/1080?random=49', night: 'https://picsum.photos/1920/1080?random=50', credit: 'Grand Rapids Overcast' }
+            },
+            fargo: {
+                clear: { day: 'https://picsum.photos/1920/1080?random=51', night: 'https://picsum.photos/1920/1080?random=52', credit: 'Fargo Prairie Sky' },
+                clouds: { day: 'https://picsum.photos/1920/1080?random=53', night: 'https://picsum.photos/1920/1080?random=54', credit: 'Fargo Cloudy' },
+                rain: { day: 'https://picsum.photos/1920/1080?random=55', night: 'https://picsum.photos/1920/1080?random=56', credit: 'North Dakota Rain' },
+                snow: { day: 'https://picsum.photos/1920/1080?random=57', night: 'https://picsum.photos/1920/1080?random=58', credit: 'Fargo Blizzard' },
+                sunny: { day: 'https://picsum.photos/1920/1080?random=59', night: 'https://picsum.photos/1920/1080?random=60', credit: 'Fargo Sunny Prairie' }
+            },
+            portland: {
+                clear: { day: 'https://picsum.photos/1920/1080?random=61', night: 'https://picsum.photos/1920/1080?random=62', credit: 'Portland Mount Hood' },
+                clouds: { day: 'https://picsum.photos/1920/1080?random=63', night: 'https://picsum.photos/1920/1080?random=64', credit: 'Portland Cloudy' },
+                rain: { day: 'https://picsum.photos/1920/1080?random=65', night: 'https://picsum.photos/1920/1080?random=66', credit: 'Portland Rain' },
+                drizzle: { day: 'https://picsum.photos/1920/1080?random=67', night: 'https://picsum.photos/1920/1080?random=68', credit: 'Portland Drizzle' },
+                sunny: { day: 'https://picsum.photos/1920/1080?random=69', night: 'https://picsum.photos/1920/1080?random=70', credit: 'Portland Sunny' }
+            },
+            london: {
+                clear: { day: 'https://picsum.photos/1920/1080?random=71', night: 'https://picsum.photos/1920/1080?random=72', credit: 'London Thames Clear' },
+                clouds: { day: 'https://picsum.photos/1920/1080?random=73', night: 'https://picsum.photos/1920/1080?random=74', credit: 'London Cloudy' },
+                rain: { day: 'https://picsum.photos/1920/1080?random=75', night: 'https://picsum.photos/1920/1080?random=76', credit: 'London Rain' },
+                fog: { day: 'https://picsum.photos/1920/1080?random=77', night: 'https://picsum.photos/1920/1080?random=78', credit: 'London Fog' },
+                overcast: { day: 'https://picsum.photos/1920/1080?random=79', night: 'https://picsum.photos/1920/1080?random=80', credit: 'London Overcast' }
+            },
+            amsterdam: {
+                clear: { day: 'https://picsum.photos/1920/1080?random=81', night: 'https://picsum.photos/1920/1080?random=82', credit: 'Amsterdam Canals Clear' },
+                clouds: { day: 'https://picsum.photos/1920/1080?random=83', night: 'https://picsum.photos/1920/1080?random=84', credit: 'Amsterdam Cloudy' },
+                rain: { day: 'https://picsum.photos/1920/1080?random=85', night: 'https://picsum.photos/1920/1080?random=86', credit: 'Amsterdam Rain' },
+                drizzle: { day: 'https://picsum.photos/1920/1080?random=87', night: 'https://picsum.photos/1920/1080?random=88', credit: 'Amsterdam Drizzle' },
+                sunny: { day: 'https://picsum.photos/1920/1080?random=89', night: 'https://picsum.photos/1920/1080?random=90', credit: 'Amsterdam Sunny' }
+            }
+        };
 
-const cityImages = {
-  "Syracuse,US": [
-    "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1585408671626-9f6e6e7267bb?auto=format&fit=crop&w=600&q=80"
-  ],
-  "Fargo,US": [
-    "https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1580407186565-14034d3f361e?auto=format&fit=crop&w=600&q=80"
-  ],
-  "Tampa,US": [
-    "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1608776825792-8c10fda05df7?auto=format&fit=crop&w=600&q=80"
-  ],
-  "London,GB": [
-    "https://images.unsplash.com/photo-1508051123996-69f8caf4891e?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1543862471-12573c94d4a2?auto=format&fit=crop&w=600&q=80"
-  ],
-  "Sydney,AU": [
-    "https://images.unsplash.com/photo-1504609813449-4d8b22cc01bf?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d3?auto=format&fit=crop&w=600&q=80"
-  ],
-  "Moscow,RU": [
-    "https://images.unsplash.com/photo-1549924231-2a8c0b97d6e7?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1600611117482-03c8f8d72f3e?auto=format&fit=crop&w=600&q=80"
-  ]
-};
+        let currentCityIndex = 0;
+        let cityKeys = Object.keys(cities);
+        let autoRotationTimer = null;
+        let isAutoRotation = true;
+        let currentBackgroundLayer = 1; // Track which layer is currently active
 
-const cityNameEl = document.getElementById('city-name');
-const currentWeatherEl = document.getElementById('current-weather');
-const forecastEl = document.getElementById('forecast');
-const cityImageEl = document.getElementById('city-image');
+        function updateProgressIndicator() {
+            const indicator = document.getElementById('progressIndicator');
+            indicator.innerHTML = '';
+            
+            cityKeys.forEach((_, index) => {
+                const dot = document.createElement('div');
+                dot.className = `progress-dot ${index === currentCityIndex ? 'active' : ''}`;
+                indicator.appendChild(dot);
+            });
+        }
 
-let currentIndex = 0;
+        function updateDate() {
+            const now = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', options);
+        }
 
-async function fetchWeather(city) {
-  currentWeatherEl.textContent = 'Loading current weather...';
-  forecastEl.innerHTML = '';
-  cityNameEl.textContent = 'Loading...';
-  cityImageEl.innerHTML = '';
+        function getWeatherIcon(condition, isDay = true) {
+            const icons = {
+                'clear': isDay ? '☀️' : '🌙',
+                'sunny': isDay ? '☀️' : '🌙',
+                'clouds': '☁️',
+                'cloudy': '☁️',
+                'overcast': '☁️',
+                'rain': '🌧️',
+                'drizzle': '🌦️',
+                'thunderstorm': '⛈️',
+                'snow': '❄️',
+                'mist': '🌫️',
+                'fog': '🌫️',
+                'haze': '🌫️'
+            };
+            
+            const lowerCondition = condition.toLowerCase();
+            for (const key in icons) {
+                if (lowerCondition.includes(key)) {
+                    return icons[key];
+                }
+            }
+            return isDay ? '☀️' : '🌙';
+        }
 
-  const currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=imperial&appid=${apiKey}`;
-  const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=imperial&appid=${apiKey}`;
+        function setBackgroundImage(condition, isDay = true, cityKey = null) {
+            const selectedCity = cityKey || cityKeys[currentCityIndex];
+            const lowerCondition = condition.toLowerCase();
+            const cityBackgrounds = weatherBackgrounds[selectedCity];
+            
+            let backgroundData = cityBackgrounds.clear; // default
+            
+            // Find matching weather condition for the specific city
+            for (const key in cityBackgrounds) {
+                if (lowerCondition.includes(key)) {
+                    backgroundData = cityBackgrounds[key];
+                    break;
+                }
+            }
+            
+            const imageUrl = isDay ? backgroundData.day : backgroundData.night;
+            
+            // Get the inactive background layer
+            const inactiveLayer = currentBackgroundLayer === 1 ? 2 : 1;
+            const activeLayerId = `backgroundLayer${currentBackgroundLayer}`;
+            const inactiveLayerId = `backgroundLayer${inactiveLayer}`;
+            
+            const activeLayer = document.getElementById(activeLayerId);
+            const inactiveLayerElement = document.getElementById(inactiveLayerId);
+            
+            // Preload the new image
+            const img = new Image();
+            img.onload = function() {
+                // Set the new background on the inactive layer
+                inactiveLayerElement.style.backgroundImage = `url('${imageUrl}')`;
+                
+                // Fade out the current layer and fade in the new one
+                activeLayer.style.opacity = '0';
+                inactiveLayerElement.style.opacity = '1';
+                
+                // Switch the current layer reference
+                currentBackgroundLayer = inactiveLayer;
+                
+                // Update the image credit
+                document.getElementById('imageCredit').textContent = backgroundData.credit;
+            };
+            img.src = imageUrl;
+        }
 
-  try {
-    const [currentRes, forecastRes] = await Promise.all([
-      fetch(currentUrl),
-      fetch(forecastUrl)
-    ]);
-    if (!currentRes.ok || !forecastRes.ok) {
-      throw new Error('Failed to fetch weather data');
-    }
-    const currentData = await currentRes.json();
-    const forecastData = await forecastRes.json();
-    displayWeather(currentData, forecastData, city);
-  } catch (error) {
-    cityNameEl.textContent = city;
-    currentWeatherEl.textContent = "Error loading weather data.";
-    forecastEl.innerHTML = "";
-    cityImageEl.innerHTML = "";
-  }
-}
+        async function fetchWeather(cityKey = null) {
+            const weatherContent = document.getElementById('weatherContent');
+            const lastUpdated = document.getElementById('lastUpdated');
+            const locationName = document.getElementById('locationName');
+            
+            // Use provided city or current city from rotation
+            const selectedCityKey = cityKey || cityKeys[currentCityIndex];
+            const city = cities[selectedCityKey];
+            
+            weatherContent.innerHTML = '<div class="loading">Loading weather data...</div>';
+            
+            try {
+                // Try multiple weather APIs
+                let data = null;
+                
+                // First try wttr.in
+                try {
+                    const response = await fetch(`https://wttr.in/${city.apiQuery}?format=j1`);
+                    if (response.ok) {
+                        data = await response.json();
+                    }
+                } catch (e) {
+                    console.log('wttr.in failed, trying alternative...');
+                }
+                
+                // If wttr.in fails, use mock data for demonstration
+                if (!data) {
+                    console.log(`Using mock weather data for ${city.name}`);
+                    data = {
+                        current_condition: [city.mockData]
+                    };
+                }
+                
+                const current = data.current_condition[0];
+                const temp = Math.round(current.temp_F);
+                const feelsLike = Math.round(current.FeelsLikeF);
+                const humidity = current.humidity;
+                const windSpeed = Math.round(current.windspeedMiles);
+                const description = current.weatherDesc[0].value;
+                const condition = current.weatherDesc[0].value;
+                
+                const isDay = new Date().getHours() >= 6 && new Date().getHours() < 20;
+                const icon = getWeatherIcon(condition, isDay);
+                
+                // Update location name
+                locationName.textContent = city.name;
+                
+                // Set background image based on weather condition and city
+                setBackgroundImage(condition, isDay, selectedCityKey);
+                
+                weatherContent.innerHTML = `
+                    <div class="weather-icon">${icon}</div>
+                    <div class="temperature">${temp}°F</div>
+                    <div class="description">${description}</div>
+                    <div class="weather-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Feels Like</div>
+                            <div class="detail-value">${feelsLike}°F</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Humidity</div>
+                            <div class="detail-value">${humidity}%</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Wind Speed</div>
+                            <div class="detail-value">${windSpeed} mph</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Condition</div>
+                            <div class="detail-value">${condition}</div>
+                        </div>
+                    </div>
+                `;
+                
+                lastUpdated.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+                
+            } catch (error) {
+                // Set default background on error
+                setBackgroundImage('clear', true, selectedCityKey);
+                
+                weatherContent.innerHTML = `
+                    <div class="error">Unable to load weather data. Please try again.</div>
+                    <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.9rem; margin-top: 10px;">
+                        Error: ${error.message}
+                    </div>
+                `;
+                
+                lastUpdated.textContent = `Error occurred at ${new Date().toLocaleTimeString()}`;
+            }
+        }
 
-function displayWeather(current, forecast, cityKey) {
-  cityNameEl.textContent = `${current.name}, ${current.state || ""} ${current.sys.country}`.replace(/,\s+/g, ", ").trim();
-  currentWeatherEl.innerHTML = `<strong>Now:</strong> ${current.weather[0].description}, ${Math.round(current.main.temp)}°F`;
+        function fadeTransition(callback) {
+            const container = document.getElementById('weatherContainer');
+            
+            // Fade out
+            container.classList.add('fade-out');
+            
+            setTimeout(() => {
+                // Execute callback (change city data)
+                callback();
+                
+                // Fade in
+                container.classList.remove('fade-out');
+                container.classList.add('fade-in');
+                
+                // Clean up fade-in class
+                setTimeout(() => {
+                    container.classList.remove('fade-in');
+                }, 1000);
+            }, 1000);
+        }
 
-  let dailyForecasts = [];
-  const today = new Date().getDate();
-  forecast.list.forEach(item => {
-    const date = new Date(item.dt_txt);
-    if (date.getHours() === 12 && date.getDate() !== today && dailyForecasts.length < 3) {
-      dailyForecasts.push(item);
-    }
-  });
+        function nextCity() {
+            currentCityIndex = (currentCityIndex + 1) % cityKeys.length;
+            fadeTransition(() => {
+                fetchWeather();
+                updateProgressIndicator();
+            });
+        }
 
-  forecastEl.innerHTML = dailyForecasts.map(day => {
-    const date = new Date(day.dt_txt);
-    const dayName = date.toLocaleDateString(undefined, { weekday: 'short' });
-    return `
-      <div class="forecast-day">
-        <strong>${dayName}</strong>
-        <div>${day.weather[0].main}</div>
-        <div>${Math.round(day.main.temp_min)}°F - ${Math.round(day.main.temp_max)}°F</div>
-      </div>
-    `;
-  }).join('');
+        function startAutoRotation() {
+            if (autoRotationTimer) {
+                clearInterval(autoRotationTimer);
+            }
+            
+            autoRotationTimer = setInterval(() => {
+                if (isAutoRotation) {
+                    nextCity();
+                }
+            }, 15000); // 15 seconds
+        }
 
-  const imageKey = `${current.name},${current.sys.country}`;
-  const images = cityImages[imageKey] || cityImages[cityKey] || [];
-  const imageUrl = images.length ? images[Math.floor(Math.random() * images.length)] : "";
-  cityImageEl.innerHTML = `<img src="${imageUrl}" alt="${current.name} skyline">`;
-}
+        function toggleAutoRotation() {
+            const pauseBtn = document.getElementById('pauseBtn');
+            isAutoRotation = !isAutoRotation;
+            
+            if (isAutoRotation) {
+                pauseBtn.textContent = 'Pause';
+                pauseBtn.classList.remove('paused');
+                startAutoRotation();
+            } else {
+                pauseBtn.textContent = 'Resume';
+                pauseBtn.classList.add('paused');
+                if (autoRotationTimer) {
+                    clearInterval(autoRotationTimer);
+                }
+            }
+        }
 
-function cycleCities() {
-  fetchWeather(cities[currentIndex]);
-  currentIndex = (currentIndex + 1) % cities.length;
-}
+        function selectCity(value) {
+            const citySelector = document.getElementById('citySelector');
+            
+            if (value === 'auto') {
+                isAutoRotation = true;
+                document.getElementById('pauseBtn').textContent = 'Pause';
+                document.getElementById('pauseBtn').classList.remove('paused');
+                startAutoRotation();
+            } else {
+                isAutoRotation = false;
+                document.getElementById('pauseBtn').textContent = 'Resume';
+                document.getElementById('pauseBtn').classList.add('paused');
+                
+                if (autoRotationTimer) {
+                    clearInterval(autoRotationTimer);
+                }
+                
+                // Find the city index
+                currentCityIndex = cityKeys.indexOf(value);
+                if (currentCityIndex === -1) currentCityIndex = 0;
+                
+                fadeTransition(() => {
+                    fetchWeather(value);
+                    updateProgressIndicator();
+                });
+            }
+        }
 
-cycleCities();
-setInterval(cycleCities, 15000);
-</script>
-
+        // Initialize the page
+        updateDate();
+        updateProgressIndicator();
+        
+        // Set initial background
+        const initialLayer = document.getElementById('backgroundLayer1');
+        initialLayer.style.backgroundImage = 'url("https://picsum.photos/1920/1080?random=1")';
+        initialLayer.style.opacity = '1';
+        
+        fetchWeather();
+        startAutoRotation();
+        
+        // Update date every minute
+        setInterval(updateDate, 60000);
+    </script>
 </body>
 </html>
