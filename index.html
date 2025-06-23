@@ -204,6 +204,7 @@
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
         }
 
+        /* News Ticker Styles from news_ticker_code3.txt */
         .news-ticker {
             position: fixed;
             bottom: 0;
@@ -237,24 +238,32 @@
         .news-content {
             flex: 1;
             height: 100%;
-            overflow: hidden;
+            overflow: hidden; /* This hides the overflowing content, crucial for marquee effect */
             position: relative;
         }
 
         .news-scroll {
-            display: flex;
-            align-items: center;
+            display: flex; /* Makes sure the inner duplicated content sits side-by-side */
+            width: max-content; /* Allows this container to be as wide as all its content */
             height: 100%;
-            animation: scroll-left 120s linear infinite;
-            white-space: nowrap;
+            align-items: center;
+            animation: scroll-left 90s linear infinite; /* Animation applied here */
+        }
+
+        /* Target the duplicated news content blocks inside news-scroll */
+        .news-scroll > div {
+            white-space: nowrap; /* Ensures all news items within each block stay on one line */
+            display: inline-flex; /* Ensures proper layout of news items */
+            align-items: center;
         }
 
         @keyframes scroll-left {
             0% {
-                transform: translateX(100%);
+                transform: translateX(0);
             }
+            /* Move exactly one copy of the content to the left for a seamless loop */
             100% {
-                transform: translateX(-100%);
+                transform: translateX(-50%); /* Moves 50% of news-scroll's total width (one full content block) */
             }
         }
 
@@ -299,41 +308,33 @@
                 padding: 30px 20px;
                 margin: 20px;
             }
-            
             .location {
                 font-size: 2.5rem;
             }
-            
             .current-temp {
                 font-size: 5rem;
             }
-
             .time-date {
                 font-size: 1.4rem;
             }
-
             .weather-description {
                 font-size: 1.6rem;
             }
-
             .weather-details {
                 grid-template-columns: 1fr;
                 gap: 12px;
                 padding: 15px;
             }
-
             .detail-item {
                 padding: 15px 12px;
             }
-
             .detail-label {
                 font-size: 0.9rem;
             }
-
             .detail-value {
                 font-size: 1.6rem;
             }
-
+            /* News Ticker Media Queries from news_ticker_code3.txt */
             .news-ticker {
                 height: 70px;
             }
@@ -357,21 +358,21 @@
             Your browser does not support the video tag.
         </video>
     </div>
-    
     <div class="gif-background" id="gifBackground"></div>
-    
     <div class="overlay"></div>
-    
+
     <div class="weather-container">
         <div class="weather-card" id="weatherCard">
             <div class="loading" id="loading">Loading weather data...</div>
         </div>
     </div>
-    
+
+    <!-- News Ticker HTML from news_ticker_code3.txt -->
     <div class="news-ticker">
         <div class="news-label">News</div>
         <div class="news-content">
             <div class="news-scroll" id="newsScroll">
+                <!-- News items will be populated and duplicated here by JavaScript for seamless scrolling -->
                 <div class="news-loading">Loading latest news...</div>
             </div>
         </div>
@@ -383,8 +384,8 @@
         const CITY = 'Syracuse';
         const STATE = 'NY';
         const STREAM_URL = 'https://tower.armorycam.com/stream/armorystream.m3u8';
-        const NEWS_API_KEY = '28da12c05d7d45efa1594b14339070c0';
-        const RSS_API_KEY = 'sJGWtKgYEYFB6VzT7FNgNYxhPxOGfbVhsP8JaKTd'; // Free RSS API key
+        const NEWS_API_KEY = '28da12c05d7d45efa1594b14339070c0'; // This is from tempwxapp.txt. Keep it.
+        const RSS_API_KEY = 'sJGWtKgYEYFB6VzT7FNgNYxhPxOGfbVhsP8JaKTd'; // This is from tempwxapp.txt. Keep it.
         const FALLBACK_GIF = 'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeDdra200dG45YW9qYTNyaHE0ZjNrZDR0and2OWF1NGs2ajM5enRnMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/m2hjlbNbSRGy4/giphy.gif';
         
         let weatherData = {};
@@ -396,7 +397,7 @@
         function initializeVideoStream() {
             const video = document.getElementById('liveVideo');
             const gifBackground = document.getElementById('gifBackground');
-            
+
             // Set timeout to show GIF fallback after 5 seconds
             videoLoadTimeout = setTimeout(() => {
                 if (!videoLoaded) {
@@ -404,274 +405,150 @@
                     showGifFallback();
                 }
             }, 5000);
-            
+
             if (Hls.isSupported()) {
                 const hls = new Hls({
                     enableWorker: true,
                     lowLatencyMode: true,
                     backBufferLength: 90
                 });
-                
                 hls.loadSource(STREAM_URL);
                 hls.attachMedia(video);
-                
                 hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    video.play().then(() => {
-                        videoLoaded = true;
-                        clearTimeout(videoLoadTimeout);
-                        console.log('Video loaded successfully');
-                    }).catch(e => {
-                        console.log('Video autoplay failed:', e);
-                        // Try to play again after user interaction
-                        document.addEventListener('click', () => {
-                            video.play().then(() => {
-                                videoLoaded = true;
-                                clearTimeout(videoLoadTimeout);
-                            });
-                        }, { once: true });
-                    });
+                    console.log('HLS manifest parsed');
+                    video.play().catch(e => console.error('Video play failed:', e));
+                    videoLoaded = true;
+                    clearTimeout(videoLoadTimeout); // Clear timeout if video loads successfully
+                    hideGifFallback();
                 });
-                
                 hls.on(Hls.Events.ERROR, function(event, data) {
-                    console.error('HLS Error:', data);
                     if (data.fatal) {
-                        clearTimeout(videoLoadTimeout);
-                        showGifFallback();
                         switch(data.type) {
                             case Hls.ErrorTypes.NETWORK_ERROR:
-                                console.log('Network error, showing GIF fallback');
+                                console.error('Hls.js network error:', data.details, data.response);
                                 break;
                             case Hls.ErrorTypes.MEDIA_ERROR:
-                                console.log('Media error, showing GIF fallback');
+                                console.error('Hls.js media error:', data.details);
+                                hls.recoverMediaError();
                                 break;
                             default:
-                                console.log('Fatal error, showing GIF fallback');
-                                hls.destroy();
+                                console.error('Hls.js fatal error:', data.type, data.details);
                                 break;
                         }
+                        // Show GIF fallback on fatal HLS errors
+                        showGifFallback();
                     }
                 });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                // Safari native HLS support
                 video.src = STREAM_URL;
-                video.addEventListener('loadedmetadata', function() {
-                    video.play().then(() => {
-                        videoLoaded = true;
-                        clearTimeout(videoLoadTimeout);
-                        console.log('Video loaded successfully (Safari)');
-                    }).catch(e => {
-                        console.log('Video autoplay failed (Safari):', e);
-                        showGifFallback();
-                    });
-                });
-                
-                video.addEventListener('error', function() {
-                    console.error('Video error, showing GIF fallback');
+                video.addEventListener('loadedmetadata', () => {
+                    video.play().catch(e => console.error('Video play failed (native):', e));
+                    videoLoaded = true;
                     clearTimeout(videoLoadTimeout);
+                    hideGifFallback();
+                });
+                video.addEventListener('error', () => {
+                    console.error('Native video playback error.');
                     showGifFallback();
                 });
             } else {
-                console.error('HLS is not supported in this browser, showing GIF fallback');
-                clearTimeout(videoLoadTimeout);
+                console.error('HLS is not supported by your browser and native playback failed.');
                 showGifFallback();
             }
+
+            video.addEventListener('playing', () => {
+                videoLoaded = true;
+                clearTimeout(videoLoadTimeout);
+                hideGifFallback();
+            });
         }
 
-        // Show GIF fallback when video fails
         function showGifFallback() {
-            const video = document.getElementById('liveVideo');
-            const gifBackground = document.getElementById('gifBackground');
-            
-            video.style.display = 'none';
-            gifBackground.style.display = 'block';
-            console.log('Switched to GIF background fallback');
+            document.getElementById('liveVideo').style.display = 'none';
+            document.getElementById('gifBackground').style.display = 'block';
         }
 
-        // Fetch news data using public RSS feeds
-        async function fetchNewsData() {
-            console.log('Fetching news data...');
-            try {
-                // Use RSS2JSON service which is free and doesn't require API key
-                const rssFeeds = [
-                    'https://rss.cnn.com/rss/edition.rss',
-                    'https://feeds.nbcnews.com/nbcnews/public/news',
-                    'https://feeds.reuters.com/reuters/topNews'
-                ];
-                
-                let allArticles = [];
-                
-                // Try each RSS feed
-                for (const rssUrl of rssFeeds) {
-                    try {
-                        const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
-                        const response = await fetch(apiUrl);
-                        console.log('RSS API response status:', response.status, 'for', rssUrl);
-                        
-                        if (response.ok) {
-                            const data = await response.json();
-                            console.log('RSS API response data status:', data.status);
-                            
-                            if (data.status === 'ok' && data.items && data.items.length > 0) {
-                                const articles = data.items.slice(0, 6).map(item => ({
-                                    title: item.title.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>'),
-                                    source: { name: data.feed ? data.feed.title : 'News' }
-                                }));
-                                allArticles = allArticles.concat(articles);
-                                console.log(`Added ${articles.length} articles from ${data.feed ? data.feed.title : 'source'}`);
-                            }
-                        }
-                    } catch (error) {
-                        console.log('Error with RSS feed:', rssUrl, error);
-                    }
-                }
-                
-                if (allArticles.length > 0) {
-                    // Shuffle and limit articles
-                    newsData = allArticles.sort(() => 0.5 - Math.random()).slice(0, 15);
-                    console.log('Total articles for display:', newsData.length);
-                    displayNewsData(newsData);
-                } else {
-                    throw new Error('No articles fetched from RSS feeds');
-                }
-                
-            } catch (error) {
-                console.error('Error fetching news data:', error);
-                // Fallback to sample news if API fails
-                displayFallbackNews();
-            }
+        function hideGifFallback() {
+            document.getElementById('liveVideo').style.display = 'block';
+            document.getElementById('gifBackground').style.display = 'none';
         }
 
-        // Display news in ticker
-        function displayNewsData(articles) {
-            console.log('Displaying news data, articles count:', articles.length);
-            const newsScroll = document.getElementById('newsScroll');
-            
-            if (articles.length === 0) {
-                console.log('No articles found, showing fallback');
-                displayFallbackNews();
-                return;
-            }
-            
-            const newsItems = articles.map(article => {
-                const title = article.title || 'News Update';
-                const source = article.source ? article.source.name : 'News Source';
-                return `<div class="news-item">${title} - ${source}</div>`;
-            }).join('');
-            
-            console.log('Generated news HTML:', newsItems.substring(0, 200) + '...');
-            newsScroll.innerHTML = newsItems;
-            
-            // Restart animation
-            newsScroll.style.animation = 'none';
-            newsScroll.offsetHeight; // Trigger reflow
-            newsScroll.style.animation = 'scroll-left 120s linear infinite';
-            console.log('News ticker animation restarted');
-        }
-
-        // Fallback news if API fails
-        function displayFallbackNews() {
-            console.log('Displaying fallback news');
-            const fallbackNews = [
-                { title: "Markets show mixed signals amid global economic uncertainty", source: "Financial News" },
-                { title: "Climate summit addresses urgent environmental challenges", source: "Environmental Report" },
-                { title: "NFL playoffs heat up with unexpected upsets", source: "Sports Network" },
-                { title: "NBA trade deadline approaches with major moves expected", source: "Sports Center" },
-                { title: "Hollywood awards season kicks off with major nominations", source: "Entertainment Weekly" },
-                { title: "Streaming services announce new original content lineup", source: "Media Watch" },
-                { title: "Technology sector continues rapid innovation and growth", source: "Tech News" },
-                { title: "Championship game draws record television viewership", source: "Sports Analytics" },
-                { title: "Music industry celebrates breakthrough artists and albums", source: "Music Today" },
-                { title: "International relations evolve with diplomatic initiatives", source: "World Report" }
-            ];
-            
-            const newsItems = fallbackNews.map(item => 
-                `<div class="news-item">${item.title} - ${item.source}</div>`
-            ).join('');
-            
-            const newsScroll = document.getElementById('newsScroll');
-            newsScroll.innerHTML = newsItems;
-            
-            // Restart animation
-            newsScroll.style.animation = 'none';
-            newsScroll.offsetHeight; // Trigger reflow
-            newsScroll.style.animation = 'scroll-left 120s linear infinite';
-            console.log('Fallback news ticker animation restarted');
-        }
-
+        // Fetch weather data from OpenWeatherMap
         async function fetchWeatherData() {
+            console.log('Fetching weather data...');
+            const weatherCard = document.getElementById('weatherCard');
+            const url = `https://api.openweathermap.org/data/2.5/weather?q=${CITY},${STATE},US&units=imperial&appid=${API_KEY}`;
+
             try {
-                const response = await fetch(
-                    `https://api.openweathermap.org/data/2.5/weather?q=${CITY},${STATE},US&appid=${API_KEY}&units=imperial`
-                );
-                
+                const response = await fetch(url);
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(`Weather data not found for ${CITY}, ${STATE}. Status: ${response.status}`);
                 }
-                
-                const data = await response.json();
-                weatherData = data;
-                displayWeatherData(data);
-                
+                weatherData = await response.json();
+                console.log('Weather data fetched:', weatherData);
+                displayWeatherData(weatherData);
             } catch (error) {
-                console.error('Error fetching weather data:', error);
-                displayError('Unable to load weather data. Please try again later.');
+                console.error('Error fetching weather data:', error.message);
+                displayError('Failed to load weather data. Please try again later.');
             }
         }
 
         // Display weather data
         function displayWeatherData(data) {
             const weatherCard = document.getElementById('weatherCard');
-            const temp = Math.round(data.main.temp);
-            const feelsLike = Math.round(data.main.feels_like);
-            const humidity = data.main.humidity;
-            const windSpeed = Math.round(data.wind.speed);
-            const windDirection = getWindDirection(data.wind.deg);
-            const pressure = Math.round(data.main.pressure * 0.02953); // Convert to inHg
-            const visibility = Math.round(data.visibility * 0.000621371); // Convert to miles
-            
-            // Get current time and date
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('en-US', { 
-                hour: 'numeric', 
-                minute: '2-digit',
-                hour12: true 
-            });
-            const dateString = now.toLocaleDateString('en-US', { 
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-            
-            weatherCard.innerHTML = `
-                <div class="location">${data.name}, NY</div>
-                <div class="time-date">${timeString}</div>
-                <div class="time-date">${dateString}</div>
-                <div class="current-temp">${temp}°F</div>
-                <div class="weather-description">${data.weather[0].description}</div>
-                
-                <div class="weather-details">
-                    <div class="detail-item">
-                        <div class="detail-label">Feels Like</div>
-                        <div class="detail-value">${feelsLike}°F</div>
+            if (data && data.main && data.weather && data.wind) {
+                const temp = Math.round(data.main.temp);
+                const feelsLike = Math.round(data.main.feels_like);
+                const description = data.weather[0].description;
+                const humidity = data.main.humidity;
+                const windSpeed = Math.round(data.wind.speed);
+                const windDirection = data.wind.deg ? getWindDirection(data.wind.deg) : 'N/A';
+                const visibility = data.visibility ? (data.visibility / 1609.34).toFixed(1) : 'N/A'; // Convert meters to miles
+
+                weatherCard.innerHTML = `
+                    <div class="location">${data.name}</div>
+                    <div class="time-date" id="currentDateTime">Loading Date/Time...</div>
+                    <div class="current-temp">${temp}°F</div>
+                    <div class="weather-description">${description}</div>
+                    <div class="weather-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Feels Like</div>
+                            <div class="detail-value">${feelsLike}°F</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Humidity</div>
+                            <div class="detail-value">${humidity}%</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Wind</div>
+                            <div class="detail-value">${windSpeed} mph ${windDirection}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Visibility</div>
+                            <div class="detail-value">${visibility} mi</div>
+                        </div>
                     </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Humidity</div>
-                        <div class="detail-value">${humidity}%</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Wind</div>
-                        <div class="detail-value">${windSpeed} mph ${windDirection}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Pressure</div>
-                        <div class="detail-value">${pressure} inHg</div>
-                    </div>
-                </div>
-            `;
+                `;
+                updateClock(); // Update clock immediately after weather data is displayed
+            } else {
+                displayError('Weather data format is unexpected.');
+            }
         }
 
-        // Display error message
+        // Update current time and date
+        function updateClock() {
+            const currentDateTimeElement = document.getElementById('currentDateTime');
+            if (currentDateTimeElement) {
+                const now = new Date();
+                const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                const optionsTime = { hour: 'numeric', minute: '2-digit', hour12: true };
+                const dateString = now.toLocaleDateString('en-US', optionsDate);
+                const timeString = now.toLocaleTimeString('en-US', optionsTime);
+                currentDateTimeElement.textContent = `${timeString}, ${dateString}`;
+            }
+        }
+
+        // Display error message in weather card
         function displayError(message) {
             const weatherCard = document.getElementById('weatherCard');
             weatherCard.innerHTML = `<div class="error">${message}</div>`;
@@ -683,17 +560,224 @@
             return directions[Math.round(degrees / 22.5) % 16];
         }
 
+        /*
+         * News Ticker JavaScript
+         */
+
+        // Fetch news data using CORS-enabled RSS proxy services
+        async function fetchNewsData() {
+            console.log('Fetching news data...');
+            const newsScroll = document.getElementById('newsScroll');
+            newsScroll.innerHTML = `<div class="news-loading">Loading latest news...</div>`; // Show loading indicator
+
+            // Use alternative RSS proxy services that support CORS
+            const rssProxies = [
+                {
+                    baseUrl: 'https://api.allorigins.win/get?url=',
+                    feeds: [
+                        'https://feeds.npr.org/1001/rss.xml',
+                        'https://feeds.bbci.co.uk/news/rss.xml',
+                        'https://rss.cnn.com/rss/edition.rss'
+                    ],
+                    name: 'AllOrigins'
+                },
+                {
+                    baseUrl: 'https://corsproxy.io/?',
+                    feeds: [
+                        'https://feeds.reuters.com/reuters/topNews',
+                        'https://feeds.npr.org/1001/rss.xml'
+                    ],
+                    name: 'CORSProxy'
+                }
+            ];
+
+            let allArticles = [];
+            let successfulFeeds = 0;
+
+            for (const proxy of rssProxies) {
+                for (const feedUrl of proxy.feeds) {
+                    try {
+                        console.log(`Fetching ${feedUrl} via ${proxy.name}...`);
+                        const proxyUrl = proxy.baseUrl + encodeURIComponent(feedUrl);
+                        const response = await fetch(proxyUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json, text/plain, */*'
+                            }
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            let xmlContent = '';
+
+                            // Handle different proxy response formats
+                            if (data.contents) {
+                                xmlContent = data.contents; // AllOrigins format
+                            } else if (typeof data === 'string') {
+                                xmlContent = data; // Direct string response
+                            } else {
+                                xmlContent = JSON.stringify(data);
+                            }
+
+                            // Parse RSS XML content
+                            const articles = parseRSSContent(xmlContent, feedUrl);
+                            if (articles.length > 0) {
+                                allArticles = allArticles.concat(articles.slice(0, 15)); // Limit to 15 articles per feed for total volume
+                                successfulFeeds++;
+                                console.log(`Successfully parsed ${articles.length} articles from ${feedUrl}`);
+                            }
+                        } else {
+                            console.warn(`HTTP ${response.status} error for ${feedUrl} via ${proxy.name}`);
+                        }
+                    } catch (error) {
+                        console.warn(`Error fetching ${feedUrl} via ${proxy.name}:`, error.message);
+                    }
+                    // Small delay between requests to avoid rate limiting
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+            }
+
+            console.log(`Successfully fetched from ${successfulFeeds} feeds, total articles: ${allArticles.length}`);
+
+            if (allArticles.length > 0) {
+                newsData = allArticles.filter(item => item.title && item.title.trim() !== ''); // Filter out empty titles
+                newsData = newsData.sort(() => 0.5 - Math.random()); // Shuffle
+                updateNewsTicker(newsData);
+            } else {
+                console.warn('No news articles fetched from any API. Using enhanced fallback news.');
+                loadEnhancedFallbackNews();
+            }
+        }
+
+        // Parse RSS XML content to extract news articles
+        function parseRSSContent(xmlString, feedUrl) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+            const items = xmlDoc.querySelectorAll("item");
+            const articles = [];
+
+            const feedSource = getSourceFromUrl(feedUrl);
+
+            items.forEach(item => {
+                const titleElement = item.querySelector("title");
+                const linkElement = item.querySelector("link");
+                const pubDateElement = item.querySelector("pubDate");
+                const descriptionElement = item.querySelector("description");
+
+                const title = titleElement ? titleElement.textContent : 'No Title';
+                const link = linkElement ? linkElement.textContent : '#';
+                const pubDate = pubDateElement ? new Date(pubDateElement.textContent).toLocaleDateString() : 'N/A';
+                let description = descriptionElement ? descriptionElement.textContent : '';
+
+                // Clean up description: remove HTML tags, limit length
+                description = description.replace(/(<([^>]+)>)/gi, "").substring(0, 150) + '...';
+
+                articles.push({
+                    title: title,
+                    link: link,
+                    pubDate: pubDate,
+                    description: description,
+                    source: feedSource
+                });
+            });
+            return articles;
+        }
+
+        // Get a user-friendly source name from the URL
+        function getSourceFromUrl(url) {
+            if (url.includes('npr.org')) return 'NPR News';
+            if (url.includes('bbci.co.uk')) return 'BBC News';
+            if (url.includes('cnn.com')) return 'CNN News';
+            if (url.includes('reuters.com')) return 'Reuters';
+            return 'News Source';
+        }
+
+        // Update the news ticker with fetched data
+        function updateNewsTicker(articles) {
+            const newsScroll = document.getElementById('newsScroll');
+            if (articles.length === 0) {
+                newsScroll.innerHTML = `<div class="news-item">No news available at the moment.</div>`;
+                return;
+            }
+
+            // Create the HTML for one set of articles
+            const singleSetHtml = articles.map(item => `
+                <div class="news-item">
+                    ${item.title} - <span style="font-weight: normal; opacity: 0.8;">${item.source}</span>
+                </div>
+            `).join('');
+
+            // Duplicate the content within newsScroll for seamless loop
+            newsScroll.innerHTML = `
+                <div>${singleSetHtml}</div>
+                <div>${singleSetHtml}</div>
+            `;
+
+            // Adjust animation duration dynamically based on content length for smoother experience
+            const contentWidth = newsScroll.scrollWidth / 2; // Width of one set of duplicated content
+            const viewportWidth = newsScroll.parentElement.offsetWidth; // Width of the visible news content area
+            // Base speed: 100px per second (adjust as needed)
+            const speed = 100; // pixels per second
+            const animationDuration = (contentWidth + viewportWidth) / speed; // Time to scroll content fully across
+
+            // Apply and restart animation
+            // We need to remove and re-add the animation property to force a restart
+            newsScroll.style.animation = 'none';
+            newsScroll.offsetHeight; /* Trigger reflow to reset animation */
+            newsScroll.style.animation = `scroll-left ${animationDuration}s linear infinite`; 
+            console.log('News ticker updated with live data and re-applied animation');
+        }
+
+        // Fallback news data if API calls fail
+        function loadEnhancedFallbackNews() {
+            const fallbackNews = [
+                { title: "Global leaders convene to address climate change and sustainable development goals", source: "World Summit News" },
+                { title: "Breakthrough in AI research promises advancements in personalized medicine and diagnostics", source: "Tech Innovations" },
+                { title: "Local community initiatives launch new programs to support youth education and empowerment", source: "Community Voice" },
+                { title: "International markets show resilience amidst economic challenges with innovative digital marketing and e-commerce strategies", source: "Business Today" },
+                { title: "Scientific research institutions collaborate on groundbreaking studies across multiple disciplines", source: "Science Daily" },
+                { title: "Cultural events and festivals return to communities with enhanced safety protocols and programming", source: "Arts & Culture" }
+            ];
+            
+            // Create the HTML for one set of fallback articles
+            const shuffled = fallbackNews.sort(() => 0.5 - Math.random());
+            const singleSetHtml = shuffled.map(item => 
+                `<div class="news-item">${item.title} - <span style="font-weight: normal; opacity: 0.8;">${item.source}</span></div>`
+            ).join('');
+            
+            const newsScroll = document.getElementById('newsScroll');
+            // Duplicate the fallback content within newsScroll
+            newsScroll.innerHTML = `
+                <div>${singleSetHtml}</div>
+                <div>${singleSetHtml}</div>
+            `;
+            
+            // Adjust animation duration dynamically for fallback as well
+            const contentWidth = newsScroll.scrollWidth / 2;
+            const viewportWidth = newsScroll.parentElement.offsetWidth;
+            const speed = 100; // pixels per second
+            const animationDuration = (contentWidth + viewportWidth) / speed;
+
+            newsScroll.style.animation = 'none';
+            newsScroll.offsetHeight; // Trigger reflow
+            newsScroll.style.animation = `scroll-left ${animationDuration}s linear infinite`; 
+            console.log('Enhanced fallback news ticker loaded with shuffled content');
+        }
+
         // Initialize the application
         function initialize() {
             initializeVideoStream();
             fetchWeatherData();
-            fetchNewsData();
+            fetchNewsData(); // Initial fetch for news
+
+            // Update clock every minute (60,000 milliseconds)
+            setInterval(updateClock, 60000);
             
             // Update weather data every 10 minutes
             setInterval(fetchWeatherData, 600000);
             
-            // Update news data every 15 minutes
-            setInterval(fetchNewsData, 900000);
+            // Update news data every 30 minutes
+            setInterval(fetchNewsData, 1800000); // Update news data every 30 minutes
         }
 
         // Start the application when page loads
